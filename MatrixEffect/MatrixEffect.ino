@@ -14,7 +14,8 @@ CRGB leds[NUM_LEDS];
 #define _B 2
 
 // colors[y][x][RGB]
-byte colors[ROWS][COLS][3];
+// colors[y][x] should really just be the CRGB array
+// byte colors[ROWS][COLS][3];
 byte new_colors[ROWS][COLS][3];
 
 
@@ -35,9 +36,10 @@ void sendColors(){
   for(uint8_t y=0; y<ROWS; ++y)
     for(uint8_t x=0; x<COLS; ++x){
       for(uint8_t i=0; i<3; ++i)
-        colors[y][x][i] = (uint8_t) (((uint16_t) colors[y][x][i]*19 + new_colors[y][x][i])/20);
+        leds[xy2i(x,y)].raw[i] = (uint8_t) (((uint16_t) leds[xy2i(x,y)].raw[i]*19 + new_colors[y][x][i])/20);
+        // colors[y][x][i] = (uint8_t) (((uint16_t) colors[y][x][i]*19 + new_colors[y][x][i])/20);
       
-      leds[xy2i(x,y)] = CRGB(colors[y][x][0],colors[y][x][1],colors[y][x][2]);
+      // leds[xy2i(x,y)] = CRGB(colors[y][x][0],colors[y][x][1],colors[y][x][2]);
     }
   LEDS.show();
 }
@@ -106,8 +108,8 @@ void setup(){
   for(uint8_t y=0; y<ROWS; ++y)
     for(uint8_t x=0; x<COLS; ++x){
       // clear pixels
-      for(uint8_t i=0; i<3; ++i)
-        colors[y][x][i] = 100;
+      // for(uint8_t i=0; i<3; ++i)
+        // colors[y][x][i] = 100;
       //seed pixels
       
       if(y==0)
