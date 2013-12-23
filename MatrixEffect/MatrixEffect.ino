@@ -54,21 +54,12 @@ void updateColors(){
     }
 
   // Seed a new pixel
-  if(random(0,10)>7)
-    onPixels[0][random(0,COLS)] = true;
-  for(uint8_t x=0; x<COLS; ++x){
-    //first row
-    if(onPixels[0][x]){
-      // Determine a random hue
-      
-      CRGB newcolor;
-      newcolor.setHSV(random(0,256), 255, 255);
-      
-      new_colors[xy2i(x,0)][_R] = newcolor.r;
-      new_colors[xy2i(x,0)][_G] = newcolor.g;
-      new_colors[xy2i(x,0)][_B] = newcolor.b;
-    }
+  if(random(0,10)>7){
+    uint8_t randx = random(0,COLS);
+    onPixels[0][randx] = true;
+    new_colors[xy2i(randx,0)].setHSV(random(0,256), 255, 255);
   }
+  
   for(uint8_t y=ROWS-1; y>0; --y)
     for(uint8_t x=0; x<COLS; ++x){
       if(onPixels[y][x]){
