@@ -37,6 +37,7 @@ void sendColors(){
     colors[i_led].h = new_colors[i_led].h;
     colors[i_led].s = new_colors[i_led].s;
     colors[i_led].v = (uint8_t) (((uint16_t) colors[i_led].v*19 + new_colors[i_led].v)/20);
+    // colors[i_led].v = new_colors[i_led].v;
     
     // Then copy the current HSV value to the current RGB value
     leds[i_led] = colors[i_led];
@@ -78,7 +79,8 @@ void updateColors(){
         new_colors[xy2i(x,y)] = new_colors[xy2i(x,y-1)];
       } else {
         // If off, turn the pixel off (the actual pixel colour has a FO low-pass filter)
-        new_colors[xy2i(x,y)].setHSV(0,0,0);
+        // Leave the hue and saturation intact
+        new_colors[xy2i(x,y)].v = 0;
       }
     }
   
@@ -87,7 +89,7 @@ void updateColors(){
   for(uint8_t x=0; x<COLS; ++x){
     //first row -> turn off the off pixels after propagation of colour
     if(!onPixels[0][x]){
-      new_colors[xy2i(x,0)].setHSV(0,0,0);
+      new_colors[xy2i(x,0)].v = 0; //leave H and S value
     }
   }
 }
@@ -98,7 +100,7 @@ void setup(){
   // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
   LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   // Limit the brightness somewhat (scale is 0-255)
-  LEDS.setBrightness(127);
+  LEDS.setBrightness(200);
   
   // Initialise the leds to black (off)
   for(uint8_t i=0; i<NUM_LEDS; ++i){
