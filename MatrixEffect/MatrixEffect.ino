@@ -12,6 +12,7 @@ CRGB leds[NUM_LEDS];
 #define _R 0
 #define _G 1
 #define _B 2
+
 // colors[y][x][RGB]
 byte colors[ROWS][COLS][3];
 byte new_colors[ROWS][COLS][3];
@@ -56,7 +57,7 @@ void updateColors(){
     }
 
   // Seed a new pixel
-  if(random(0,10)>6)
+  if(random(0,10)>7)
     onPixels[0][random(0,COLS)] = true;
   for(uint8_t x=0; x<COLS; ++x){
     //first row
@@ -64,15 +65,10 @@ void updateColors(){
       // Determine a random hue
       CRGB newcolor;
       newcolor.setHSV(random(0,256), 255, 255);
-      // hsv2rgb_rainbow(CHSV(random(0,256), 255, 255), &newcolor);
-      // hsl2rgb((double)random(0,21)/20.0, (double)1.0, (double)0.5, c);
+      
       new_colors[0][x][_R] = newcolor.r;
       new_colors[0][x][_G] = newcolor.g;
       new_colors[0][x][_B] = newcolor.b;
-      /*
-      for(uint8_t i=0; i<3; ++i)
-        new_colors[0][x][i] = c[i];
-      */
     }
   }
   for(uint8_t y=ROWS-1; y>0; --y)
