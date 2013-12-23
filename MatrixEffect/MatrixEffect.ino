@@ -5,7 +5,9 @@
 #define NUM_LEDS (ROWS*COLS)
 
 CRGB leds[NUM_LEDS];
-CRGB new_colors[NUM_LEDS];
+// Keep the current colour available in HSV
+CHSV colors[NUM_LEDS];
+CHSV new_colors[NUM_LEDS];
 
 
 #define LOOP_TIME 20
@@ -28,9 +30,18 @@ uint8_t xy2i(uint8_t x, uint8_t y){
 // Send the colours out to the LEDs---right now also includes the low-pass filtering
 void sendColors(){
   // We do not need to use the array structure here---just copy some values
-  for(uint8_t i_led=0; i_led<NUM_LEDS; ++i_led)
-    for(uint8_t i=0; i<3; ++i)
-      leds[i_led][i] = (uint8_t) (((uint16_t) leds[i_led][i]*19 + new_colors[i_led][i])/20);
+  for(uint8_t i_led=0; i_led<NUM_LEDS; ++i_led){
+    // First do a FO low-pass between new_colors and colors (in HSV space)
+    // Actually, for this effect, copy the hue and saturation directly,
+    // and only do FO low-pass on value (lightness)
+    colors[i_led].h = new_colors[i_led].h;
+    colors[i_led].s = new_colors[i_led].s;
+    colors[i_led].v = (uint8_t) (((uint16_t) colors[i_led].v*19 + new_colors[i_led].v)/20);
+    
+    // Then copy the current HSV value to the current RGB value
+    leds[i_led] = colors[i_led];
+  }
+    
   
   LEDS.show();
 }
@@ -67,7 +78,7 @@ void updateColors(){
         new_colors[xy2i(x,y)] = new_colors[xy2i(x,y-1)];
       } else {
         // If off, turn the pixel off (the actual pixel colour has a FO low-pass filter)
-        new_colors[xy2i(x,y)] = CRGB::Black;
+        new_colors[xy2i(x,y)].setHSV(0,0,0);
       }
     }
   
@@ -76,7 +87,7 @@ void updateColors(){
   for(uint8_t x=0; x<COLS; ++x){
     //first row -> turn off the off pixels after propagation of colour
     if(!onPixels[0][x]){
-      new_colors[xy2i(x,0)] = CRGB::Black;
+      new_colors[xy2i(x,0)].setHSV(0,0,0);
     }
   }
 }
