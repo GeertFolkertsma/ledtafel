@@ -36,47 +36,8 @@ void sendColors(){
         colors[y][x][i] = (uint8_t) (colors[y][x][i]*19.0/20.0 + new_colors[y][x][i]/20.0);
       
       leds[xy2i(x,y)] = CRGB(colors[y][x][0],colors[y][x][1],colors[y][x][2]);
-      // grid.setPixelColor(x,y,colors[y][x][0],colors[y][x][1],colors[y][x][2]);
     }
-  // grid.show();
   LEDS.show();
-}
-
-/*
-#define NUM_RAND_COLOURS 5
-uint8_t rand_colours[NUM_RAND_COLOURS][3] = {
-  0, 255, 0,
-  255, 0, 0,
-  0, 0, 255,
-  255, 127, 0,
-  100, 0, 50
-};*/
-
-byte c[3];
-double hue2rgb(double p, double q, double t) {
-    if(t < 0) t += 1;
-    if(t > 1) t -= 1;
-    if(t < 1.0/6.0) return p + (q - p) * 6 * t;
-    if(t < 1.0/2.0) return q;
-    if(t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6;
-    return p;
-}
-void hsl2rgb(double h, double s, double l, byte rgb[]) {
-    double r, g, b;
-
-    if (s == 0) {
-        r = g = b = l; // achromatic
-    } else {
-        double q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        double p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1.0/3.0);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1.0/3.0);
-    }
-
-    rgb[0] = r * 255;
-    rgb[1] = g * 255;
-    rgb[2] = b * 255;
 }
 
 boolean onPixels[ROWS][COLS];
@@ -101,10 +62,17 @@ void updateColors(){
     //first row
     if(onPixels[0][x]){
       // Determine a random hue
-      hsl2rgb((double)random(0,21)/20.0, (double)1.0, (double)0.5, c);
-      
+      CRGB newcolor;
+      newcolor.setHSV(random(0,256), 255, 255);
+      // hsv2rgb_rainbow(CHSV(random(0,256), 255, 255), &newcolor);
+      // hsl2rgb((double)random(0,21)/20.0, (double)1.0, (double)0.5, c);
+      new_colors[0][x][_R] = newcolor.r;
+      new_colors[0][x][_G] = newcolor.g;
+      new_colors[0][x][_B] = newcolor.b;
+      /*
       for(uint8_t i=0; i<3; ++i)
         new_colors[0][x][i] = c[i];
+      */
     }
   }
   for(uint8_t y=ROWS-1; y>0; --y)
