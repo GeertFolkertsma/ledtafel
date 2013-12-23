@@ -42,8 +42,8 @@ void sendColors(){
     // saturation is always maximal right now, anyway simply copy it
     colors[i_led].s = new_colors[i_led].s;
     
-    // Then, value/brightness: brighten more quickly than dim
-    if(new_colors[i_led].v > colors[i_led].v)
+    // Then, value/brightness: brighten more quickly than dim---if it is not already bright
+    if(colors[i_led].v < 100 && new_colors[i_led].v > colors[i_led].v)
       colors[i_led].v = (uint8_t) (((uint16_t) colors[i_led].v*9 + new_colors[i_led].v)/10);
     else
       colors[i_led].v = (uint8_t) (((uint16_t) colors[i_led].v*19 + new_colors[i_led].v)/20);
