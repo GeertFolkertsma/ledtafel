@@ -32,14 +32,23 @@ void sendColors(){
   // We do not need to use the array structure here---just copy some values
   for(uint8_t i_led=0; i_led<NUM_LEDS; ++i_led){
     // First do a FO low-pass between new_colors and colors (in HSV space)
-    // Actually, for this effect, copy the hue and saturation directly,
-    // and only do FO low-pass on value (lightness)
-    colors[i_led].h = new_colors[i_led].h;
-    colors[i_led].s = new_colors[i_led].s;
-    colors[i_led].v = (uint8_t) (((uint16_t) colors[i_led].v*19 + new_colors[i_led].v)/20);
-    // colors[i_led].v = new_colors[i_led].v;
     
-    // Then copy the current HSV value to the current RGB value
+    // If the led is currently on,  do a low-pass filter on the hue, to blend overlapping tail colours; otherwise simply copy the new hue, to prevent a grey-ish "head"
+    if(colors[i_led].v > 20)
+      colors[i_led].h = (uint8_t) (((uint16_t) colors[i_led].h*9 + new_colors[i_led].h)/10);
+    else
+      colors[i_led].h = new_colors[i_led].h;
+    
+    // saturation is always maximal right now, anyway simply copy it
+    colors[i_led].s = new_colors[i_led].s;
+    
+    // Then, value/brightness: brighten more quickly than dim
+    if(new_colors[i_led].v > colors[i_led].v)
+      colors[i_led].v = (uint8_t) (((uint16_t) colors[i_led].v*9 + new_colors[i_led].v)/10);
+    else
+      colors[i_led].v = (uint8_t) (((uint16_t) colors[i_led].v*19 + new_colors[i_led].v)/20);
+    
+    // Finally copy the current HSV value to the current RGB value
     leds[i_led] = colors[i_led];
   }
     
@@ -79,7 +88,7 @@ void updateColors(){
         new_colors[xy2i(x,y)] = new_colors[xy2i(x,y-1)];
       } else {
         // If off, turn the pixel off (the actual pixel colour has a FO low-pass filter)
-        // Leave the hue and saturation intact
+        // Leave the hue and saturation intact: they are not used in the interpolation
         new_colors[xy2i(x,y)].v = 0;
       }
     }
@@ -89,7 +98,7 @@ void updateColors(){
   for(uint8_t x=0; x<COLS; ++x){
     //first row -> turn off the off pixels after propagation of colour
     if(!onPixels[0][x]){
-      new_colors[xy2i(x,0)].v = 0; //leave H and S value
+      new_colors[xy2i(x,0)].v = 0; //leave H and S value, since we're not using that for interpolation
     }
   }
 }
@@ -100,7 +109,7 @@ void setup(){
   // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
   LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   // Limit the brightness somewhat (scale is 0-255)
-  LEDS.setBrightness(200);
+  LEDS.setBrightness(127);
   
   // Initialise the leds to black (off)
   for(uint8_t i=0; i<NUM_LEDS; ++i){
