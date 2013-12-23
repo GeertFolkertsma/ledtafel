@@ -5,15 +5,11 @@
 #define NUM_LEDS (ROWS*COLS)
 
 CRGB leds[NUM_LEDS];
+CRGB new_colors[NUM_LEDS];
+
 
 #define LOOP_TIME 20
 #define UPDATE_TIME 150
-
-#define _R 0
-#define _G 1
-#define _B 2
-
-CRGB new_colors[NUM_LEDS];
 
 
 // Return 0-based led index for 0-based x and y grid co-ordinate values
@@ -29,18 +25,23 @@ uint8_t xy2i(uint8_t x, uint8_t y){
   }
 }
 
+// Send the colours out to the LEDs---right now also includes the low-pass filtering
 void sendColors(){
-  for(uint8_t y=0; y<ROWS; ++y)
-    for(uint8_t x=0; x<COLS; ++x){
-      for(uint8_t i=0; i<3; ++i)
-        leds[xy2i(x,y)][i] = (uint8_t) (((uint16_t) leds[xy2i(x,y)][i]*19 + new_colors[xy2i(x,y)][i])/20);
-    }
+  // We do not need to use the array structure here---just copy some values
+  for(uint8_t i_led=0; i_led<NUM_LEDS; ++i_led)
+    for(uint8_t i=0; i<3; ++i)
+      leds[i_led][i] = (uint8_t) (((uint16_t) leds[i_led][i]*19 + new_colors[i_led][i])/20);
+  
   LEDS.show();
 }
 
+// Update the colours: in this case, propagate the "on" pixels downwards and seed
+// new pixels on the first row, to obtain a "Matrix effect"
 boolean onPixels[ROWS][COLS];
 void updateColors(){
   
+  // Loop through the rows, starting from the bottom, copying the "on" state from the
+  // row above and then clearing that pixel, to have the "on" state "walk down" the cols
   for(uint8_t y=ROWS-1; y>0; --y)
     for(uint8_t x=0; x<COLS; ++x){
       if(onPixels[y-1][x]){
@@ -48,28 +49,30 @@ void updateColors(){
         onPixels[y][x] = true;
         // and turn off that preceding one
         onPixels[y-1][x] = false;
-      } else {
-        onPixels[y][x] = false;
       }
     }
 
-  // Seed a new pixel
+  // Seed a new pixel in the first row, with a 30% chance
   if(random(0,10)>7){
     uint8_t randx = random(0,COLS);
     onPixels[0][randx] = true;
     new_colors[xy2i(randx,0)].setHSV(random(0,256), 255, 255);
   }
   
+  // Now percolate down the colours from top to bottom (again by looping from bottom to top)
   for(uint8_t y=ROWS-1; y>0; --y)
     for(uint8_t x=0; x<COLS; ++x){
       if(onPixels[y][x]){
-        for(uint8_t i=0; i<3; ++i)
-          new_colors[xy2i(x,y)][i] = new_colors[xy2i(x,y-1)][i];
+        // If on, copy the colour from the row above
+        new_colors[xy2i(x,y)] = new_colors[xy2i(x,y-1)];
       } else {
-        for(uint8_t i=0; i<3; ++i)
-          new_colors[xy2i(x,y)][i] = 0;
+        // If off, turn the pixel off (the actual pixel colour has a FO low-pass filter)
+        new_colors[xy2i(x,y)] = CRGB::Black;
       }
     }
+  
+  // Finally, turn off all pixels in the first row that are not "on"
+  // This is a separate loop, because the on pixels should not get their colour from row -1
   for(uint8_t x=0; x<COLS; ++x){
     //first row -> turn off the off pixels after propagation of colour
     if(!onPixels[0][x]){
