@@ -1,14 +1,14 @@
-#include "SPI.h"
-#include "Adafruit_WS2801.h"
+#include "FastSPI_LED2.h"
 
-Adafruit_WS2801 grid = Adafruit_WS2801((uint8_t)10, (uint8_t)10);
+#define ROWS 10
+#define COLS 10
+#define NUM_LEDS (ROWS*COLS)
 
+CRGB leds[NUM_LEDS];
 
 #define LOOP_TIME 50
 #define UPDATE_TIME 150
 
-#define ROWS 10
-#define COLS 10
 #define _R 0
 #define _G 1
 #define _B 2
@@ -17,15 +17,29 @@ byte colors[ROWS][COLS][3];
 byte new_colors[ROWS][COLS][3];
 
 
+// Return 0-based led index for 0-based x and y grid co-ordinate values
+// The LED string snakes through the grid, so every row the positive x direction switches
+uint8_t xy2i(uint8_t x, uint8_t y){
+  if(y%2){
+    // It's an uneven row: x should be reversed---or subtracted from the next row's first i
+    return COLS*(y+1) - 1 - x;
+  } else {
+    // Even row: simply do COLS*y + x
+    return COLS*y + x;
+  }
+}
+
 void sendColors(){
   for(uint8_t y=0; y<ROWS; ++y)
     for(uint8_t x=0; x<COLS; ++x){
       for(uint8_t i=0; i<3; ++i)
         colors[y][x][i] = (uint8_t) (colors[y][x][i]*19.0/20.0 + new_colors[y][x][i]/20.0);
       
-      grid.setPixelColor(x,y,colors[y][x][0],colors[y][x][1],colors[y][x][2]);
+      leds[xy2i(x,y)] = CRGB(colors[y][x][0],colors[y][x][1],colors[y][x][2]);
+      // grid.setPixelColor(x,y,colors[y][x][0],colors[y][x][1],colors[y][x][2]);
     }
-  grid.show();
+  // grid.show();
+  LEDS.show();
 }
 
 /*
@@ -114,9 +128,14 @@ void updateColors(){
 }
 
 void setup(){
-
-  grid.begin();
-  grid.show();
+  delay(1000);
+  LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
+  LEDS.setBrightness(64);
+  
+  for(uint8_t i=0; i<NUM_LEDS; ++i){
+    leds[i] = CRGB::Black;
+  }
+  LEDS.show();
   
   // Turn off all LEDs, initialise pixel seeds on first row
   for(uint8_t y=0; y<ROWS; ++y)
