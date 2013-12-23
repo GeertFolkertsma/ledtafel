@@ -73,28 +73,24 @@ void updateColors(){
   for(uint8_t x=0; x<COLS; ++x){
     //first row -> turn off the off pixels after propagation of colour
     if(!onPixels[0][x]){
-      new_colors[xy2i(x,0)][_G] = 0;
-      new_colors[xy2i(x,0)][_R] = 0;
-      new_colors[xy2i(x,0)][_B] = 0;
+      new_colors[xy2i(x,0)] = CRGB::Black;
     }
   }
 }
 
 void setup(){
+  // Delay in case the LEDs draw a lot of current and kill the power supply
   delay(1000);
+  // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
   LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
-  LEDS.setBrightness(64);
+  // Limit the brightness somewhat (scale is 0-255)
+  LEDS.setBrightness(127);
   
+  // Initialise the leds to black (off)
   for(uint8_t i=0; i<NUM_LEDS; ++i){
     leds[i] = CRGB::Black;
   }
   LEDS.show();
-  
-  // Initialise pixel seeds on first row
-  for(uint8_t x=0; x<COLS; ++x){
-    onPixels[0][x] = (random(0,10)>5);
-  }
-  sendColors();
 }
 
 unsigned long lastLoopTime = 0;
