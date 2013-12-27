@@ -1,0 +1,5 @@
+Arduino connections to ledtafel:
+5V   red
+GND  yellow
+13   blue
+11   green
