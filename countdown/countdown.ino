@@ -5,6 +5,7 @@
 #define NUM_LEDS (ROWS*COLS)
 
 CRGB leds[NUM_LEDS];
+CRGB walker_leds[NUM_LEDS]; //separate array that holds the leds that 'walk/move out' of the table
 
 // Return 0-based led index for 0-based x and y grid co-ordinate values
 // The LED string snakes through the grid, so every row the positive x direction switches
@@ -31,7 +32,7 @@ const CRGB moving_colours[] = {CRGB::Red, CRGB::Green, CRGB::Blue};
 
 void step_led(){
   // First, turn off completely the led at step_counter (the light will leave this spot)
-  leds[step_counter] = CRGB::Black;
+  walker_leds[step_counter] = CRGB::Black;
   // Re-set the step period 'countdown timer'
   step_period = 1000/(1+leds_index);
   
@@ -54,18 +55,18 @@ void step_led(){
     // Turn off the current colour in the current 'source' led
     if(colour_counter==2){
       // moved out blue
-      leds[leds_index] = CRGB::Yellow;
+      walker_leds[leds_index] = CRGB::Yellow;
     } else if(colour_counter==1) {
       // moved out green as well
-      leds[leds_index] = CRGB::Red;
+      walker_leds[leds_index] = CRGB::Red;
     } else if(colour_counter==0){
-      leds[leds_index] = CRGB::Black;
+      walker_leds[leds_index] = CRGB::Black;
     }
   }
   
   step_counter--;
   // Light up the properly-coloured led in the current position
-  leds[step_counter] = moving_colours[colour_counter];
+  walker_leds[step_counter] = moving_colours[colour_counter];
 }
 
 void update(){
@@ -81,8 +82,10 @@ void setup(){
   // Limit the brightness somewhat (scale is 0-255)
   LEDS.setBrightness(64);
   
-  for(uint8_t i=0; i<NUM_LEDS; ++i)
+  for(uint8_t i=0; i<NUM_LEDS; ++i){
     leds[i] = CRGB::White;
+    walker_leds[i] = CRGB::White;
+  }
   
   LEDS.show();
   Serial.begin(57600);
@@ -102,6 +105,10 @@ void loop(){
   
   if(millis()-prevUpdateTime >= UPDATE_TIME){
     prevUpdateTime = millis();
+    for(uint8_t i_led=0; i_led != NUM_LEDS; ++i_led){
+      for(uint8_t i=0; i!=3; ++i)
+        leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i])/20);
+    }
     update();
   }
   
