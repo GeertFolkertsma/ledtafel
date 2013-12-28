@@ -19,28 +19,17 @@ uint8_t xy2i(uint8_t x, uint8_t y){
   }
 }
 
-void setup(){
-  // Delay in case the LEDs draw a lot of current and kill the power supply
-  delay(1000);
-  // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
-  LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
-  // Limit the brightness somewhat (scale is 0-255)
-  LEDS.setBrightness(64);
-  
-  for(uint8_t i=0; i<NUM_LEDS; ++i)
-    leds[i] = CRGB::White;
-  
-  LEDS.show();
-}
 
-#define TIMESTEP 25
+#define UPDATE_TIME 20
+#define TIMESTEP 5
+uint16_t step_period = 1;
 uint8_t leds_index = 0;
 uint8_t colour_counter=0; //keep track of the remaining colours in led (100-leds_left)
 uint8_t step_counter=0; //keep track of the remaining steps of the currently-moving colour
 
 const CRGB moving_colours[] = {CRGB::Red, CRGB::Green, CRGB::Blue};
 
-void update(){
+void step_led(){
   // First, turn off completely the led at step_counter (the light will leave this spot)
   leds[step_counter] = CRGB::Black;
   
@@ -69,15 +58,51 @@ void update(){
   step_counter--;
   // Light up the properly-coloured led in the current position
   leds[step_counter] = moving_colours[colour_counter];
-  
+
+  // take just as long for the first as for the last leds to move out:
+  step_period = 1000/(1+leds_index);
+}
+
+void update(){
   LEDS.show();
 }
 
+
+void setup(){
+  // Delay in case the LEDs draw a lot of current and kill the power supply
+  delay(1000);
+  // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
+  LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
+  // Limit the brightness somewhat (scale is 0-255)
+  LEDS.setBrightness(64);
+  
+  for(uint8_t i=0; i<NUM_LEDS; ++i)
+    leds[i] = CRGB::White;
+  
+  LEDS.show();
+  Serial.begin(57600);
+}
+
 unsigned long prevStepTime = 0;
+unsigned long prevUpdateTime = 0;
+unsigned long prevReportTime = 0;
 void loop(){
   if(millis()-prevStepTime >= TIMESTEP){
     prevStepTime = millis();
+    if(--step_period == 0){
+      // step_period is reset inside step_led();
+      step_led();
+    }
+  }
+  
+  if(millis()-prevUpdateTime >= UPDATE_TIME){
+    prevUpdateTime = millis();
     update();
+  }
+  
+  if(millis()-prevReportTime >= 500){
+    prevReportTime = millis();
+    Serial.println(step_period);
   }
 }
 
