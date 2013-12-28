@@ -32,6 +32,8 @@ const CRGB moving_colours[] = {CRGB::Red, CRGB::Green, CRGB::Blue};
 void step_led(){
   // First, turn off completely the led at step_counter (the light will leave this spot)
   leds[step_counter] = CRGB::Black;
+  // Re-set the step period 'countdown timer'
+  step_period = 1000/(1+leds_index);
   
   // Then, check whether we still have steps left on the current led
   if(step_counter==0){
@@ -44,6 +46,11 @@ void step_led(){
     }
     colour_counter--;
     step_counter = leds_index;
+    // Pause 1 step before moving out this new led
+    return;
+  }
+  
+  if(step_counter==leds_index){
     // Turn off the current colour in the current 'source' led
     if(colour_counter==2){
       // moved out blue
@@ -55,12 +62,10 @@ void step_led(){
       leds[leds_index] = CRGB::Black;
     }
   }
+  
   step_counter--;
   // Light up the properly-coloured led in the current position
   leds[step_counter] = moving_colours[colour_counter];
-
-  // take just as long for the first as for the last leds to move out:
-  step_period = 1000/(1+leds_index);
 }
 
 void update(){
