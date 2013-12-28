@@ -22,13 +22,25 @@ uint8_t xy2i(uint8_t x, uint8_t y){
 
 
 #define UPDATE_TIME 20
-#define TIMESTEP 5
+#define WALKER_TIMESTEP 50
 uint16_t step_period = 1;
 uint8_t leds_index = 0;
 uint8_t colour_counter=0; //keep track of the remaining colours in led (100-leds_left)
 uint8_t step_counter=0; //keep track of the remaining steps of the currently-moving colour
 
 const CRGB moving_colours[] = {CRGB::Red, CRGB::Green, CRGB::Blue};
+
+void seed_walker(uint8_t start=0){
+  //restart the walker
+  step_period = 1;
+  leds_index = min(start,NUM_LEDS-1);
+  colour_counter = 0;
+  step_counter = 0;
+  // Initialise the white leds
+  for(uint8_t i_led=0; i_led != NUM_LEDS; ++i_led){
+    walker_leds[i_led] = (i_led>=start) ? CRGB::White : CRGB::Black;
+  }
+}
 
 void step_led(){
   // First, turn off completely the led at step_counter (the light will leave this spot)
@@ -84,18 +96,19 @@ void setup(){
   
   for(uint8_t i=0; i<NUM_LEDS; ++i){
     leds[i] = CRGB::White;
-    walker_leds[i] = CRGB::White;
   }
   
   LEDS.show();
   Serial.begin(57600);
+  
+  seed_walker(50);
 }
 
 unsigned long prevStepTime = 0;
 unsigned long prevUpdateTime = 0;
 unsigned long prevReportTime = 0;
 void loop(){
-  if(millis()-prevStepTime >= TIMESTEP){
+  if(millis()-prevStepTime >= WALKER_TIMESTEP){
     prevStepTime = millis();
     if(--step_period == 0){
       // step_period is reset inside step_led();
