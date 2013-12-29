@@ -1,4 +1,5 @@
 #include "FastSPI_LED2.h"
+#include "Streaming.h"
 
 #define ROWS 10
 #define COLS 10
@@ -124,7 +125,7 @@ void writeDigits(uint16_t secs){
 }
 
 #define UPDATE_TIME 20
-#define WALKER_TIMESTEP 50
+#define WALKER_TIMESTEP 100
 uint16_t step_period = 1;
 uint8_t leds_index = 0;
 uint8_t colour_counter=0; //keep track of the remaining colours in led (100-leds_left)
@@ -184,6 +185,55 @@ void step_led(){
   walker_leds[step_counter] = moving_colours[colour_counter];
 }
 
+
+#define TOTAL_SECONDS ((uint16_t)(90*60))
+#define SECONDS_PER_LED ((uint16_t)TOTAL_SECONDS/NUM_LEDS)
+#define SECONDS_PER_COLOUR ((uint16_t) SECONDS_PER_LED/3)
+
+void draw_walker(uint16_t s){
+  // Draw the complete walker for the current amount of seconds left
+  
+  // 1: determine the led that is currently 'walking out'
+  //    Since each led should take equal time to walk out, this is simply 100*s/T
+  uint8_t current_led = 100-(s / SECONDS_PER_LED);
+  // 2: determine which of the three colours is moving out
+  uint8_t secs_in_led = SECONDS_PER_LED-s%SECONDS_PER_LED;
+  uint8_t current_colour = ((uint16_t) secs_in_led * 3) / SECONDS_PER_LED;
+  // 3: determine the position of the current colour
+  uint8_t current_pos = current_led-1 - ((secs_in_led % SECONDS_PER_COLOUR) * current_led) / SECONDS_PER_COLOUR;
+  
+  // The following happens at the very end of the last led
+  if(current_colour==3){
+    return;
+  }
+  
+  // Then, do the colouring!
+  for(uint8_t i_led=0; i_led <= current_led; ++i_led){
+    // these are all black
+    walker_leds[i_led] = CRGB::Black;
+  }
+  for(uint8_t i_led= max(current_led+1,NUM_LEDS-1); i_led < NUM_LEDS; ++i_led){
+    // these are white
+    walker_leds[i_led] = CRGB::White;
+  }
+  // Now, the current led's colour
+  switch(current_colour){
+    case 0: //blue has left
+      walker_leds[current_led] = CRGB::Yellow;
+    break;
+    case 1: //green has also left
+      walker_leds[current_led] = CRGB::Red;
+    break;
+    break;
+    // TODO: default case?
+  }
+  // Finally, the walking led
+  // TODO: if this works, reverse moving_colours and remove 2- in the index below
+  walker_leds[current_pos] = moving_colours[2-current_colour];
+  
+  Serial << "s: " << s << "; led: " << current_led << "; c: " << current_colour << "; p: " << current_pos << endl;
+}
+
 void update(){
   LEDS.show();
 }
@@ -209,7 +259,7 @@ void setup(){
 }
 
 
-uint16_t seconds_left = 90*60;
+uint16_t seconds_left = TOTAL_SECONDS;
 
 
 unsigned long prevStepTime = 0;
@@ -220,29 +270,32 @@ unsigned long prevReportTime = 0;
 void loop(){
   if(millis()-prevStepTime >= WALKER_TIMESTEP){
     prevStepTime = millis();
+    /*
     if(--step_period == 0){
       // step_period is reset inside step_led();
       step_led();
-    }
+    }*/
+    draw_walker(seconds_left--);
   }
-  
+  /*
   if(millis()-prevCounterTime >= 500){
     prevCounterTime = millis();
     writeDigits(seconds_left--);
-  }
+  }*/
   
   if(millis()-prevUpdateTime >= UPDATE_TIME){
     prevUpdateTime = millis();
     for(uint8_t i_led=0; i_led != NUM_LEDS; ++i_led){
       for(uint8_t i=0; i!=3; ++i)
-        leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i]/2 + (uint16_t)counter_leds[i_led][i]/3)/20);
+        leds[i_led][i] = walker_leds[i_led][i];
+        // leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i]/2 + (uint16_t)counter_leds[i_led][i]/3)/20);
     }
     update();
   }
   
   if(millis()-prevReportTime >= 500){
     prevReportTime = millis();
-    Serial.println(step_period);
+//    Serial.println(step_period);
   }
 }
 
