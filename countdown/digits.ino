@@ -93,15 +93,15 @@ const boolean nine[] = {
 const boolean* digits[] = {zero, one, two, three, four, five, six, seven, eight, nine};
 
 
-void showDigit(uint8_t c, uint8_t dx, uint8_t dy){
+void writeDigit(uint8_t c, uint8_t dx, uint8_t dy, CRGB* colour){
   // Digits are 3 by 5 (x by y)
   for(uint8_t y=0; y != 5; ++y){
     Serial.println();
     for(uint8_t x=0; x!=3; ++x){
       if(digits[c][x+3*y]){
-        leds[xy2i(dx+x,dy+y)] = CRGB::Red;
+        leds[xy2i(dx+x,dy+y)] = colour;
       } else {
-        leds[xy2i(dx+x,dy+y)] = CRGB::Black;
+        leds[xy2i(dx+x,dy+y)] = colour;
       }
     }
   }
@@ -113,7 +113,7 @@ void setup(){
   // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
   LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   // Limit the brightness somewhat (scale is 0-255)
-  LEDS.setBrightness(24);
+  LEDS.setBrightness(48);
   
   for(uint8_t i=0; i<NUM_LEDS; ++i){
     leds[i] = CRGB::Black;
@@ -124,14 +124,15 @@ void setup(){
   Serial.begin(57600);
 }
 
-uint8_t d = 0;
+uint8_t ds[] = {0,1,2,3};
+CRGB digit_colours[] = {CRGB::Red, CRGB::OrangeRed, CRGB::Cyan, CRGB::Blue};
 void loop(){
-  
-  showDigit(d,3,2);
+  for(uint8_t i=0; i!=4; ++i){
+    writeDigit(ds[i]++, (i>1?2:0) + (i%2)*5, (i>1?5:0), digit_colours[i]);
+    if(ds[i]>9) ds[i] = 0;
+  }
   LEDS.show();
   delay(5000);
-  ++d;
-  if(d>9) d = 0;
 }
 
 
