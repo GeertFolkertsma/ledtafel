@@ -141,6 +141,7 @@ void seed_walker(uint8_t start=0){
   // Initialise the white leds
   for(uint8_t i_led=0; i_led != NUM_LEDS; ++i_led){
     walker_leds[i_led] = (i_led>=start) ? CRGB::White : CRGB::Black;
+    walker_leds[i_led]/= 2;
   }
 }
 
@@ -204,7 +205,7 @@ void setup(){
   LEDS.show();
   Serial.begin(57600);
   
-  seed_walker(50);
+  seed_walker(1);
 }
 
 
@@ -234,7 +235,7 @@ void loop(){
     prevUpdateTime = millis();
     for(uint8_t i_led=0; i_led != NUM_LEDS; ++i_led){
       for(uint8_t i=0; i!=3; ++i)
-        leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i]/2 + (uint16_t)counter_leds[i_led][i]/2)/20);
+        leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i]/2 + (uint16_t)counter_leds[i_led][i]/3)/20);
     }
     update();
   }

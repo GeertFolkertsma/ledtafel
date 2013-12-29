@@ -1,3 +1,9 @@
+// This is a working stand-alone demo of a countdown timer
+// Everything is commented out because, when the folder is opened in Arduino, 
+// this file is included as well. To use it, simply copy all the code, paste 
+// in an empty sketch.
+
+/*
 #include "FastSPI_LED2.h"
 
 #define ROWS 10
@@ -148,3 +154,4 @@ void loop(){
 }
 
 
+*/
