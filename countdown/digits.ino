@@ -90,10 +90,11 @@ const boolean nine[] = {
   true, true, true
 };
 
+
 const boolean* digits[] = {zero, one, two, three, four, five, six, seven, eight, nine};
 
 
-void writeDigit(uint8_t c, uint8_t dx, uint8_t dy, CRGB* colour){
+void writeDigit(uint8_t c, uint8_t dx, uint8_t dy, CRGB colour){
   // Digits are 3 by 5 (x by y)
   for(uint8_t y=0; y != 5; ++y){
     Serial.println();
@@ -101,10 +102,23 @@ void writeDigit(uint8_t c, uint8_t dx, uint8_t dy, CRGB* colour){
       if(digits[c][x+3*y]){
         leds[xy2i(dx+x,dy+y)] = colour;
       } else {
-        leds[xy2i(dx+x,dy+y)] = colour;
+        leds[xy2i(dx+x,dy+y)] = CRGB::Black;
       }
     }
   }
+}
+
+uint16_t seconds_left = 90*60;
+void writeDigits(){
+  // minutes left: seconds / 60 ; 
+  uint8_t minutes_left = seconds_left/60;
+  // 10 minutes left: minutes_left / 10
+  writeDigit(minutes_left/10, 0, 0, CRGB::OrangeRed);
+  // last digit: minutes left % 10
+  writeDigit(minutes_left % 10, 5, 0, CRGB::OrangeRed);
+  // Seconds left: seconds_left-60*mnutes_left
+  writeDigit((seconds_left-60*minutes_left)/10, 2, 5, CRGB::Cyan);
+  writeDigit((seconds_left-60*minutes_left)%10, 7, 5, CRGB::Cyan);
 }
 
 void setup(){
@@ -124,15 +138,13 @@ void setup(){
   Serial.begin(57600);
 }
 
-uint8_t ds[] = {0,1,2,3};
-CRGB digit_colours[] = {CRGB::Red, CRGB::OrangeRed, CRGB::Cyan, CRGB::Blue};
+
+
 void loop(){
-  for(uint8_t i=0; i!=4; ++i){
-    writeDigit(ds[i]++, (i>1?2:0) + (i%2)*5, (i>1?5:0), digit_colours[i]);
-    if(ds[i]>9) ds[i] = 0;
-  }
+  writeDigits();
+  seconds_left--;
   LEDS.show();
-  delay(5000);
+  delay(500);
 }
 
 
