@@ -4,7 +4,8 @@
 #define COLS 10
 #define NUM_LEDS (ROWS*COLS)
 
-CRGB leds[NUM_LEDS];
+CRGB counter_leds[NUM_LEDS];
+
 // Return 0-based led index for 0-based x and y grid co-ordinate values
 // The LED string snakes through the grid, so every row the positive x direction switches
 uint8_t xy2i(uint8_t x, uint8_t y){
@@ -100,37 +101,36 @@ void writeDigit(uint8_t c, uint8_t dx, uint8_t dy, CRGB colour){
     Serial.println();
     for(uint8_t x=0; x!=3; ++x){
       if(digits[c][x+3*y]){
-        leds[xy2i(dx+x,dy+y)] = colour;
+        counter_leds[xy2i(dx+x,dy+y)] = colour;
       } else {
-        leds[xy2i(dx+x,dy+y)] = CRGB::Black;
+        counter_leds[xy2i(dx+x,dy+y)] = CRGB::Black;
       }
     }
   }
 }
 
-uint16_t seconds_left = 90*60;
-void writeDigits(){
+void writeDigits(uint16_t secs){
   // minutes left: seconds / 60 ; 
-  uint8_t minutes_left = seconds_left/60;
+  uint8_t mins = secs/60;
   // 10 minutes left: minutes_left / 10
-  writeDigit(minutes_left/10, 0, 0, CRGB::OrangeRed);
+  writeDigit(mins/10, 0, 0, CRGB::Magenta);
   // last digit: minutes left % 10
-  writeDigit(minutes_left % 10, 5, 0, CRGB::OrangeRed);
+  writeDigit(mins % 10, 5, 0, CRGB::Magenta);
   // Seconds left: seconds_left-60*mnutes_left
-  writeDigit((seconds_left-60*minutes_left)/10, 2, 5, CRGB::Cyan);
-  writeDigit((seconds_left-60*minutes_left)%10, 7, 5, CRGB::Cyan);
+  writeDigit((secs-60*mins)/10, 2, 5, CRGB::Cyan);
+  writeDigit((secs-60*mins)%10, 7, 5, CRGB::Cyan);
 }
 
 void setup(){
   // Delay in case the LEDs draw a lot of current and kill the power supply
   delay(1000);
   // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
-  LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
+  LEDS.addLeds<WS2801, RGB>(counter_leds, NUM_LEDS);
   // Limit the brightness somewhat (scale is 0-255)
   LEDS.setBrightness(48);
   
   for(uint8_t i=0; i<NUM_LEDS; ++i){
-    leds[i] = CRGB::Black;
+    counter_leds[i] = CRGB::Black;
   }
   
   LEDS.show();
@@ -139,10 +139,10 @@ void setup(){
 }
 
 
+uint16_t seconds_left = 90*60;
 
 void loop(){
-  writeDigits();
-  seconds_left--;
+  writeDigits(seconds_left--);
   LEDS.show();
   delay(500);
 }
