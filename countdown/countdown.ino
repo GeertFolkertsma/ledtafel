@@ -6,6 +6,7 @@
 
 CRGB leds[NUM_LEDS];
 CRGB walker_leds[NUM_LEDS]; //separate array that holds the leds that 'walk/move out' of the table
+CRGB counter_leds[NUM_LEDS]; //separate array that holds the counter (digits)
 
 // Return 0-based led index for 0-based x and y grid co-ordinate values
 // The LED string snakes through the grid, so every row the positive x direction switches
@@ -20,6 +21,107 @@ uint8_t xy2i(uint8_t x, uint8_t y){
   }
 }
 
+// Add digits for countdown timer
+const boolean zero[] = {
+  true, true, true,
+  true, false, true,
+  true, false, true,
+  true, false, true,
+  true, true, true
+};
+boolean one[] = {
+  false, false, true,
+  false, false, true,
+  false, false, true,
+  false, false, true,
+  false, false, true
+};
+const boolean two[] = {
+  true, true, true,
+  false, false, true,
+  true, true, true,
+  true, false, false,
+  true, true, true
+};
+const boolean three[] = {
+  true, true, true,
+  false, false, true,
+  false, true, true,
+  false, false, true,
+  true, true, true
+};
+const boolean four[] = {
+  true, false, true,
+  true, false, true,
+  true, true, true,
+  false, false, true,
+  false, false, true
+};
+const boolean five[] = {
+  true, true, true,
+  true, false, false,
+  true, true, true,
+  false, false, true,
+  true, true, true
+};
+const boolean six[] = {
+  true, true, true,
+  true, false, false,
+  true, true, true,
+  true, false, true,
+  true, true, true
+};
+boolean seven[] = {
+  true, true, true,
+  false, false, true,
+  false, false, true,
+  false, false, true,
+  false, false, true
+};
+const boolean eight[] = {
+  true, true, true,
+  true, false, true,
+  true, true, true,
+  true, false, true,
+  true, true, true
+};
+const boolean nine[] = {
+  true, true, true,
+  true, false, true,
+  true, true, true,
+  false, false, true,
+  true, true, true
+};
+
+
+const boolean* digits[] = {zero, one, two, three, four, five, six, seven, eight, nine};
+
+
+void writeDigit(uint8_t c, uint8_t dx, uint8_t dy, CRGB colour){
+  // Digits are 3 by 5 (x by y)
+  for(uint8_t y=0; y != 5; ++y){
+    Serial.println();
+    for(uint8_t x=0; x!=3; ++x){
+      if(digits[c][x+3*y]){
+        counter_leds[xy2i(dx+x,dy+y)] = colour;
+      } else {
+        counter_leds[xy2i(dx+x,dy+y)] = CRGB::Black;
+      }
+    }
+  }
+}
+
+void writeDigits(uint16_t secs){
+  // minutes left: seconds / 60 ; 
+  uint8_t mins = secs/60;
+  // 10 minutes left: minutes_left / 10
+  writeDigit(mins/10, 0, 0, CRGB::Magenta);
+  // last digit: minutes left % 10
+  writeDigit(mins % 10, 5, 0, CRGB::Magenta);
+  // Seconds left: seconds_left-60*mnutes_left
+  writeDigit((secs-60*mins)/10, 2, 5, CRGB::Cyan);
+  writeDigit((secs-60*mins)%10, 7, 5, CRGB::Cyan);
+}
 
 #define UPDATE_TIME 20
 #define WALKER_TIMESTEP 50
@@ -96,6 +198,7 @@ void setup(){
   
   for(uint8_t i=0; i<NUM_LEDS; ++i){
     leds[i] = CRGB::White;
+    counter_leds[i] = CRGB::Black;
   }
   
   LEDS.show();
@@ -104,9 +207,15 @@ void setup(){
   seed_walker(50);
 }
 
+
+uint16_t seconds_left = 90*60;
+
+
 unsigned long prevStepTime = 0;
+unsigned long prevCounterTime = 0;
 unsigned long prevUpdateTime = 0;
 unsigned long prevReportTime = 0;
+
 void loop(){
   if(millis()-prevStepTime >= WALKER_TIMESTEP){
     prevStepTime = millis();
@@ -116,11 +225,16 @@ void loop(){
     }
   }
   
+  if(millis()-prevCounterTime >= 500){
+    prevCounterTime = millis();
+    writeDigits(seconds_left--);
+  }
+  
   if(millis()-prevUpdateTime >= UPDATE_TIME){
     prevUpdateTime = millis();
     for(uint8_t i_led=0; i_led != NUM_LEDS; ++i_led){
       for(uint8_t i=0; i!=3; ++i)
-        leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i])/20);
+        leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i]/2 + (uint16_t)counter_leds[i_led][i]/2)/20);
     }
     update();
   }
