@@ -1,5 +1,4 @@
 #include "FastSPI_LED2.h"
-#include "Streaming.h"
 
 #define ROWS 10
 #define COLS 10
@@ -125,7 +124,7 @@ void writeDigits(uint16_t secs){
 }
 
 #define UPDATE_TIME 20
-#define WALKER_TIMESTEP 25
+#define WALKER_TIMESTEP 100
 uint16_t step_period = 1;
 uint8_t leds_index = 0;
 uint8_t colour_counter=0; //keep track of the remaining colours in led (100-leds_left)
@@ -178,8 +177,6 @@ void draw_walker(uint16_t decasecs){
   }
   // Finally, the walking led
   walker_leds[current_pos] = moving_colours[current_colour];
-  
-  Serial << "s: " << decasecs << "; led: " << current_led << "; c: " << current_colour << "; p: " << current_pos << endl;
 }
 
 void update(){
@@ -209,24 +206,17 @@ uint16_t decaseconds_left = 10*TOTAL_SECONDS/4;
 
 
 unsigned long prevStepTime = 0;
-unsigned long prevCounterTime = 0;
 unsigned long prevUpdateTime = 0;
 unsigned long prevReportTime = 0;
 
 void loop(){
   if(millis()-prevStepTime >= WALKER_TIMESTEP){
-    prevStepTime = millis();
-    /*
-    if(--step_period == 0){
-      // step_period is reset inside step_led();
-      step_led();
-    }*/
+    unsigned long error = millis()-prevStepTime - WALKER_TIMESTEP;
+    prevStepTime = millis() - error;
     draw_walker(decaseconds_left--);
-  }
-  
-  if(millis()-prevCounterTime >= 500){
-    prevCounterTime = millis();
-    writeDigits(decaseconds_left/10);
+    if(decaseconds_left%10==0){
+      writeDigits(decaseconds_left/10);
+    }
   }
   
   if(millis()-prevUpdateTime >= UPDATE_TIME){
