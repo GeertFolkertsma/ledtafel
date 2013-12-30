@@ -202,7 +202,7 @@ void setup(){
 }
 
 
-uint16_t decaseconds_left = 10*TOTAL_SECONDS/4;
+uint16_t decaseconds_left = 10*TOTAL_SECONDS;
 
 
 unsigned long prevStepTime = 0;
