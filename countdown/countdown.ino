@@ -144,9 +144,9 @@ void draw_walker(uint16_t decasecs){
   
   // 1: determine the led that is currently 'walking out'
   //    Since each led should take equal time to walk out, this is simply 100*s/T
-  uint8_t current_led = 100-(decasecs / DECASECONDS_PER_LED);
+  uint8_t current_led = ((10*TOTAL_SECONDS - decasecs) / DECASECONDS_PER_LED);
   // 2: determine which of the three colours is moving out
-  uint8_t decasecs_in_led = DECASECONDS_PER_LED - decasecs % DECASECONDS_PER_LED;
+  uint16_t decasecs_in_led = DECASECONDS_PER_LED - decasecs % DECASECONDS_PER_LED;
   uint8_t current_colour = ((uint16_t) decasecs_in_led * 3) / DECASECONDS_PER_LED;
   // 3: determine the position of the current colour
   uint8_t current_pos = current_led-1 - ((decasecs_in_led % DECASECONDS_PER_COLOUR) * current_led) / DECASECONDS_PER_COLOUR;
@@ -205,7 +205,7 @@ void setup(){
 }
 
 
-uint16_t decaseconds_left = 10*TOTAL_SECONDS/8;
+uint16_t decaseconds_left = 10*TOTAL_SECONDS/4;
 
 
 unsigned long prevStepTime = 0;
@@ -223,18 +223,18 @@ void loop(){
     }*/
     draw_walker(decaseconds_left--);
   }
-  /*
+  
   if(millis()-prevCounterTime >= 500){
     prevCounterTime = millis();
-    writeDigits(seconds_left--);
-  }*/
+    writeDigits(decaseconds_left/10);
+  }
   
   if(millis()-prevUpdateTime >= UPDATE_TIME){
     prevUpdateTime = millis();
     for(uint8_t i_led=0; i_led != NUM_LEDS; ++i_led){
       for(uint8_t i=0; i!=3; ++i)
-        leds[i_led][i] = walker_leds[i_led][i];
-        // leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i]/2 + (uint16_t)counter_leds[i_led][i]/3)/20);
+        // leds[i_led][i] = walker_leds[i_led][i];
+        leds[i_led][i] = (uint8_t) (((uint16_t)leds[i_led][i]*19 + (uint16_t)walker_leds[i_led][i]/2 + (uint16_t)counter_leds[i_led][i]/3)/20);
     }
     update();
   }
