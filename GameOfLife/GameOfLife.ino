@@ -1,7 +1,7 @@
 #include "FastSPI_LED2.h"
 
 
-#define LOOP_TIME 100
+#define LOOP_TIME 20
 #define UPDATE_TIME 5000
 #define SEED_DELAY 10000
 
@@ -89,7 +89,7 @@ void GoLstep(){
       if(next[y][x] != alive[y][x]) same_alive = false;
     }
   }
-  if(same_prev || same_alive){
+  if((same_prev || same_alive) && !seedFlag){
     seedFlag = true;
     seedTime = millis();
   }
@@ -117,7 +117,7 @@ void sendColors(){
   // simple FO low-pass between newleds and leds
   for(uint8_t i_led=0; i_led!=NUM_LEDS; ++i_led)
     for(uint8_t i=0; i!=3; ++i)
-      leds[i_led][i] = (uint8_t) (((uint16_t) leds[i_led][i]*19 + newleds[i_led][i])/20);
+      leds[i_led][i] = (uint8_t) (((uint16_t) leds[i_led][i]*24 + newleds[i_led][i])/25);
   
   LEDS.show();
 }
