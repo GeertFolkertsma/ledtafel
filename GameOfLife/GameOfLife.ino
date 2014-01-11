@@ -36,6 +36,7 @@ uint8_t getNeighbour(int8_t y, int8_t x){
   return 0;
 }
 
+uint8_t hue; //all living cells have a slowly changing colour
 void GoLstep(){
   //execute a GoL-step
   for(uint8_t y=0; y!=ROWS; ++y){
@@ -65,11 +66,14 @@ void GoLstep(){
   // Now copy next to current (alive)
   memcpy(alive,next,sizeof(next));
   
+  // Generate a new hue
+  hue += (10-random(0,20));
+  
   // Finally, update the newleds array
   for(uint8_t y=0; y!=ROWS; ++y){
     for(uint8_t x=0; x!=COLS; ++x){
       if(alive[y][x]){
-        newleds[xy2i(x,y)].setHSV(127, 255, 255);
+        newleds[xy2i(x,y)].setHSV(hue, 255, 255);
       } else {
         newleds[xy2i(x,y)] = CRGB::Black;
       }
