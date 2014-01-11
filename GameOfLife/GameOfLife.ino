@@ -1,8 +1,9 @@
 #include "FastSPI_LED2.h"
 
 
-#define LOOP_TIME 20
-#define UPDATE_TIME 1000
+#define LOOP_TIME 100
+#define UPDATE_TIME 5000
+#define SEED_DELAY 10000
 
 #define ROWS 10
 #define COLS 10
@@ -29,6 +30,8 @@ uint8_t xy2i(uint8_t x, uint8_t y){
 boolean alive[ROWS][COLS];
 // cells alive in next step
 boolean next[ROWS][COLS];
+// keep previous state in memory to detect period-1 oscillations
+boolean prev[ROWS][COLS];
 
 uint8_t getNeighbour(int8_t y, int8_t x){
   if( y<0 || y>=ROWS || x<0 || x>=COLS) return 0;
@@ -37,8 +40,22 @@ uint8_t getNeighbour(int8_t y, int8_t x){
 }
 
 uint8_t hue; //all living cells have a slowly changing colour
+void GoLseed(){
+  // seed initial cells
+  for(uint8_t y=0; y!=ROWS; ++y){
+    for(uint8_t x=0; x!=COLS; ++x){
+      alive[y][x] = random(0,10)>5;
+    }
+  }
+}
+
+// Flag and time are used to seed a new game with a delay
+boolean seedFlag = false;
+unsigned long seedTime = 0; 
 void GoLstep(){
   //execute a GoL-step
+  
+  // Loop through all cells and determine their next state
   for(uint8_t y=0; y!=ROWS; ++y){
     for(uint8_t x=0; x!=COLS; ++x){
       // First reset the next array
@@ -63,7 +80,22 @@ void GoLstep(){
       // All other cases: die or stay dead
     }
   }
-  // Now copy next to current (alive)
+  // Try to find a stall, or period-1 oscillation
+  boolean same_prev = true;
+  boolean same_alive = true;
+  for(uint8_t y=0; y!=ROWS; ++y){
+    for(uint8_t x=0; x!=COLS; ++x ){
+      if(next[y][x] != prev[y][x]) same_prev = false;
+      if(next[y][x] != alive[y][x]) same_alive = false;
+    }
+  }
+  if(same_prev || same_alive){
+    seedFlag = true;
+    seedTime = millis();
+  }
+  
+  // Now copy current to prev and next to current (alive)
+  memcpy(prev,alive,sizeof(alive));
   memcpy(alive,next,sizeof(next));
   
   // Generate a new hue
@@ -103,19 +135,22 @@ void setup(){
   }
   LEDS.show();
   
-  // seed initial cells
-  randomSeed(analogRead(A0));
-  for(uint8_t y=0; y!=ROWS; ++y){
-    for(uint8_t x=0; x!=COLS; ++x){
-      alive[y][x] = random(0,10)>5;
-    }
-  }
+  
+  randomSeed(analogRead(A3));
+  // generate initial hue
+  hue = random(0,255);
+  // seed the first cells
+  GoLseed();
 }
 
 
 unsigned long lastLoopTime = 0;
 unsigned long lastUpdateTime = 0;
 void loop(){
+  if(seedFlag && millis()-seedTime > SEED_DELAY){
+    seedFlag = false;
+    GoLseed();
+  }
   if(millis()-lastUpdateTime > UPDATE_TIME){
     GoLstep();
     lastUpdateTime = millis();
