@@ -1,4 +1,5 @@
 #include "FastSPI_LED2.h"
+#include "Streaming.h"
 
 // Game of Life parameters
 
@@ -11,6 +12,15 @@
 // Hue is linearly interpolated between randomised values
 // the speed of the interpolation is 255 * HUE_SLOWDOWN * LOOP_TIME ~= 5s * HUE_SLOWDOWN
 #define HUE_SLOWDOWN 10
+
+//random colour parameters (min/max for each h,s,v)
+#define H_MIN 0
+#define H_MAX 255
+#define S_MIN 180
+#define S_MAX 255
+#define V_MIN 180
+#define V_MAX 255
+
 
 // End of GoL parameters, do not change below
 
@@ -49,7 +59,6 @@ uint8_t getNeighbour(int8_t y, int8_t x){
   return 0;
 }
 
-uint8_t hue, from_hue, to_hue; //all living cells have a slowly changing colour
 void GoLseed(){
   // seed initial cells
   for(uint8_t y=0; y!=ROWS; ++y){
@@ -58,6 +67,9 @@ void GoLseed(){
     }
   }
 }
+
+// Hue, saturation and value definition need to be here
+uint8_t hue, saturation, value;
 
 // Flag and time are used to seed a new game with a delay
 boolean seedFlag = false;
@@ -112,7 +124,7 @@ void GoLstep(){
   for(uint8_t y=0; y!=ROWS; ++y){
     for(uint8_t x=0; x!=COLS; ++x){
       if(alive[y][x]){
-        newleds[xy2i(x,y)].setHSV(hue, 255, 255);
+        newleds[xy2i(x,y)].setHSV(hue, saturation, value);
       } else {
         newleds[xy2i(x,y)] = CRGB::Black;
       }
@@ -120,21 +132,38 @@ void GoLstep(){
   }
 }
 
+//all living cells have a slowly changing colour
+uint8_t from_hue, to_hue, from_sat, to_sat, from_val, to_val; 
+void generateColour(){
+  to_hue = random(H_MIN,H_MAX);
+  to_sat = random(S_MIN,S_MAX);
+  to_val = random(V_MIN,V_MAX);
+}
+uint8_t interpolate(uint8_t from, uint8_t to, uint8_t frac){
+  //interpolate between FROM and TO, based on FRAC
+  return (uint8_t) (( (uint16_t)from * (255-frac) + (uint16_t)to * frac ) / 255);
+}
 uint16_t hue_i = 0;
 void sendColors(){
   // interpolate between from_hue and to_hue
   if(++hue_i == HUE_SLOWDOWN*255){
     //select a new hue
     from_hue = to_hue;
-    to_hue = random(0,255);
+    from_sat = to_sat;
+    from_val = to_val;
+    generateColour();
+    
+    hue_i = 0;
   }
-  hue = lerp8by8(from_hue,to_hue,hue_i/HUE_SLOWDOWN);
+  hue = interpolate(from_hue,to_hue,hue_i/HUE_SLOWDOWN);
+  saturation = interpolate(from_sat,to_sat,hue_i/HUE_SLOWDOWN);
+  value = interpolate(from_val,to_val,hue_i/HUE_SLOWDOWN);
   
   // Update the hue for the ALIVE leds
   for(uint8_t y=0; y!=ROWS; ++y){
     for(uint8_t x=0; x!=COLS; ++x){
       if(alive[y][x]){
-        newleds[xy2i(x,y)].setHSV(hue, 255, 255);
+        newleds[xy2i(x,y)].setHSV(hue, saturation, value);
       } else {
         newleds[xy2i(x,y)] = CRGB::Black;
       }
@@ -164,9 +193,13 @@ void setup(){
   
   
   randomSeed(analogRead(A3));
-  // generate initial hues
-  from_hue = random(0,255);
-  to_hue = random(0,255);
+  // generate initial hues and saturation
+  generateColour();
+  // copy these to from_X
+  from_hue = to_hue; from_val = to_val; from_sat = to_sat;
+  // generate new TO-colour
+  generateColour();
+  
   // seed the first cells
   GoLseed();
 }
