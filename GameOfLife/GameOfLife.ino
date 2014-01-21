@@ -1,9 +1,19 @@
 #include "FastSPI_LED2.h"
 
+// Game of Life parameters
 
+// Loop time of main loop in ms (20 default -> 50 Hz)
 #define LOOP_TIME 20
+// Time between GoL steps in ms (5000 default -> one step every 5 s)
 #define UPDATE_TIME 5000
-#define SEED_DELAY 10000
+// How long to wait with seeding a new field after a stall or period-2 oscillations (ms)
+#define SEED_DELAY 15000
+// Hue is linearly interpolated between randomised values
+// the speed of the interpolation is 255 * HUE_SLOWDOWN * LOOP_TIME ~= 5s * HUE_SLOWDOWN
+#define HUE_SLOWDOWN 10
+
+// End of GoL parameters, do not change below
+
 
 #define ROWS 10
 #define COLS 10
@@ -39,7 +49,7 @@ uint8_t getNeighbour(int8_t y, int8_t x){
   return 0;
 }
 
-uint8_t hue; //all living cells have a slowly changing colour
+uint8_t hue, from_hue, to_hue; //all living cells have a slowly changing colour
 void GoLseed(){
   // seed initial cells
   for(uint8_t y=0; y!=ROWS; ++y){
@@ -98,9 +108,6 @@ void GoLstep(){
   memcpy(prev,alive,sizeof(alive));
   memcpy(alive,next,sizeof(next));
   
-  // Generate a new hue
-  hue += (10-random(0,20));
-  
   // Finally, update the newleds array
   for(uint8_t y=0; y!=ROWS; ++y){
     for(uint8_t x=0; x!=COLS; ++x){
@@ -113,11 +120,31 @@ void GoLstep(){
   }
 }
 
+uint16_t hue_i = 0;
 void sendColors(){
-  // simple FO low-pass between newleds and leds
-  for(uint8_t i_led=0; i_led!=NUM_LEDS; ++i_led)
+  // interpolate between from_hue and to_hue
+  if(++hue_i == HUE_SLOWDOWN*255){
+    //select a new hue
+    from_hue = to_hue;
+    to_hue = random(0,255);
+  }
+  hue = lerp8by8(from_hue,to_hue,hue_i/HUE_SLOWDOWN);
+  
+  // Update the hue for the ALIVE leds
+  for(uint8_t y=0; y!=ROWS; ++y){
+    for(uint8_t x=0; x!=COLS; ++x){
+      if(alive[y][x]){
+        newleds[xy2i(x,y)].setHSV(hue, 255, 255);
+      } else {
+        newleds[xy2i(x,y)] = CRGB::Black;
+      }
+    }
+  }
+  
+  for(uint8_t i_led=0; i_led!=NUM_LEDS; ++i_led){
     for(uint8_t i=0; i!=3; ++i)
       leds[i_led][i] = (uint8_t) (((uint16_t) leds[i_led][i]*24 + newleds[i_led][i])/25);
+  }
   
   LEDS.show();
 }
@@ -137,8 +164,9 @@ void setup(){
   
   
   randomSeed(analogRead(A3));
-  // generate initial hue
-  hue = random(0,255);
+  // generate initial hues
+  from_hue = random(0,255);
+  to_hue = random(0,255);
   // seed the first cells
   GoLseed();
 }
