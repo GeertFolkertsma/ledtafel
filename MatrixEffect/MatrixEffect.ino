@@ -1,4 +1,4 @@
-#include "FastSPI_LED2.h"
+#include "FastLED.h"
 
 #define ROWS 10
 #define COLS 10
@@ -17,6 +17,10 @@ CHSV new_colors[NUM_LEDS];
 // Return 0-based led index for 0-based x and y grid co-ordinate values
 // The LED string snakes through the grid, so every row the positive x direction switches
 uint8_t xy2i(uint8_t x, uint8_t y){
+  // this is a 90-degree rotation
+  uint8_t temp = x;
+  x = ROWS-1-y;
+  y = temp;
   if(y%2){
     // It's an uneven row: x should be reversed---or subtracted from this line's
     //last index, which is the next line's first minus 1
@@ -109,7 +113,7 @@ void setup(){
   // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
   LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   // Limit the brightness somewhat (scale is 0-255)
-  LEDS.setBrightness(127);
+  LEDS.setBrightness(255);
   
   // Initialise the leds to black (off)
   for(uint8_t i=0; i<NUM_LEDS; ++i){
