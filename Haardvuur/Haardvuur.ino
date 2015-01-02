@@ -72,18 +72,28 @@ void loop(){
 void FireAway(){
   uint8_t i;
   uint16_t heat_sum; // to hold a large sum of heat sources
+  
   // 1. each cell cools down a bit
   for( i=0; i != NUM_LEDS; ++i){
     heat[i] = qsub8(heat[i], random8(0, COOLING));
   }
+  
   // 2. now heat drifts up (a lot) and sideways (a bit)
   for( uint8_t y=COLS-1; y != 2; --y){
-    for( uint8_t x=1; x != ROWS-1; ++x){
+    for( uint8_t x=0; x != ROWS; ++x){
       i = xy2i(x,y);
-      heat_sum = 2*(uint16_t)heat[xy2i(x,y-1)] + 4*(uint16_t)heat[xy2i(x,y-2)] + heat[xy2i(x-1,y-1)] + heat[xy2i(x+1,y-1)];
+      heat_sum = 2*(uint16_t)heat[xy2i(x,y-1)] + 4*(uint16_t)heat[xy2i(x,y-2)];
+      if(x != 0){
+        heat_sum += heat[xy2i(x-1,y-1)];
+      }
+      if(x != COLS-1){
+        heat_sum += heat[xy2i(x+1,y-1)];
+      }
+      
       heat[i] = (heat_sum/8);
     }
   }
+  
   // 3. then new 'sparks' are ignited along the bottom
   //with double probability in the 'middle' columns
   if( random8() < SPARKING ){
@@ -92,7 +102,7 @@ void FireAway(){
     heat[i] = qadd8(heat[i], random8(160,255));
   }
   if( random8() < SPARKING ){
-    // spark somewhere in the middle
+    // spark somewhere at the bottom, in the middle
     i = xy2i(random8(COLS/4,COLS-COLS/4),0);
     heat[i] = qadd8(heat[i], random8(160,255));
   }
