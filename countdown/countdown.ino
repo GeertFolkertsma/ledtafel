@@ -130,7 +130,7 @@ uint8_t leds_index = 0;
 uint8_t colour_counter=0; //keep track of the remaining colours in led (100-leds_left)
 uint8_t step_counter=0; //keep track of the remaining steps of the currently-moving colour
 
-const CRGB moving_colours[] = {CRGB::Blue, CRGB::Green, CRGB::Red};
+const CRGB moving_colours[] = {CRGB::Blue/10, CRGB::Green/10, CRGB::Red/10};
 
 #define TOTAL_SECONDS ((uint16_t)(90*60))
 #define SECONDS_PER_LED ((uint16_t)TOTAL_SECONDS/NUM_LEDS)
@@ -162,15 +162,15 @@ void draw_walker(uint16_t decasecs){
   }
   for(uint8_t i_led= min(current_led+1,NUM_LEDS-1); i_led < NUM_LEDS; ++i_led){
     // these are white
-    walker_leds[i_led] = CRGB::White;
+    walker_leds[i_led] = CRGB(32,32,32);
   }
   // Now, the current led's colour
   switch(current_colour){
     case 0: //blue has left
-      walker_leds[current_led] = CRGB::Yellow;
+      walker_leds[current_led] = CRGB::Yellow / 10;
     break;
     case 1: //green has also left
-      walker_leds[current_led] = CRGB::Red;
+      walker_leds[current_led] = CRGB::Red / 10;
     break;
     break;
     // TODO: default case?
@@ -190,7 +190,7 @@ void setup(){
   // Let the controller know we're using WS2801 leds, and give a pointer to the current colour array
   LEDS.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   // Limit the brightness somewhat (scale is 0-255)
-  LEDS.setBrightness(64);
+  LEDS.setBrightness(200);
   
   for(uint8_t i=0; i<NUM_LEDS; ++i){
     leds[i] = CRGB::White;
@@ -217,6 +217,9 @@ void loop(){
     if(decaseconds_left%10==0){
       writeDigits(decaseconds_left/10);
     }
+    if(decaseconds_left == 0){
+      endFunction();
+    }
   }
   
   if(millis()-prevUpdateTime >= UPDATE_TIME){
@@ -235,3 +238,9 @@ void loop(){
   }
 }
 
+void endFunction(){
+  fill_rainbow(leds, NUM_LEDS, 0, 255/NUM_LEDS);
+//  LEDS.fill_rainbow();
+  LEDS.show();
+  while(true){};
+}
