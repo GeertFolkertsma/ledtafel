@@ -1,5 +1,9 @@
 // TODO: changing/other palette?
 #include <FastLED.h>
+// #define SERIAL_DEBUG
+#ifdef SERIAL_DEBUG
+#include <Streaming.h>
+#endif
 
 #define ROWS 10
 #define COLS 10
@@ -7,14 +11,16 @@
 
 // Fire settings
 #define BRIGHTNESS 180
-#define LOOP_TIME 500
-#define COOLING 55
-#define SPARKING 120
+#define LOOP_TIME 45
+#define FIRE_EVERY 6 //update fire every n loops only; interpolate in-between
+#define COOLING 40
+#define SPARKING 90
 
 // direct output buffer
 CRGB leds[NUM_LEDS];
 // Heatmap, with the 'temperature' of the fire
 uint8_t heat[NUM_LEDS];
+uint8_t heat_old[NUM_LEDS];
 // Current colour palette
 CRGBPalette16 gPal;
 
@@ -23,7 +29,6 @@ uint8_t xy2i(uint8_t x, uint8_t y){
   // (0,0) is bottom-left corner; x is right; y is up
   // LED string snake starts at (0,0) and goes up first
   //so x always increases, but y alternates between + and -
-  
   if(x%2 == 0){
     // In the 'even' rows (first row is x=0), y increases
     return ROWS*x + y;
@@ -34,9 +39,13 @@ uint8_t xy2i(uint8_t x, uint8_t y){
 }
 
 void setup(){
+#ifdef SERIAL_DEBUG
+  Serial.begin(57600);
+  Serial << "Haardvuur.ino" << endl;
+#endif
   FastLED.delay(1000);
   
-  FastLED.addLeds<WS2812, RGB>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
   //test to see if everything is working
   fill_rainbow(leds, NUM_LEDS, 0, 255/NUM_LEDS);
@@ -55,17 +64,28 @@ void setup(){
 // 2. Heat drifts up (a lot) and sideways (a bit)
 // 3. New 'sparks' 
 
+uint8_t loopCounter = 1;
+#ifdef SERIAL_DEBUG
+unsigned long prev_looptime;
+#endif
 void loop(){
   // Random is used a lot, so 'add entropy' here
   random16_add_entropy(random());
   
   // Execute the fire simulation function
-  FireAway();
+  if(loopCounter++ == FIRE_EVERY){
+    loopCounter = 0;
+    FireAway();
+  }
   
   // Calculate the proper LED colours
-  ColourLeds();
+  ColourLeds(loopCounter);
   
   FastLED.show();
+#ifdef SERIAL_DEBUG
+  Serial << (millis()-prev_looptime) << endl;
+  prev_looptime = millis();
+#endif
   FastLED.delay(LOOP_TIME);
 }
 
@@ -75,14 +95,19 @@ void FireAway(){
   
   // 1. each cell cools down a bit
   for( i=0; i != NUM_LEDS; ++i){
+    // copy heatmap to old heatmap for interpolation
+    heat_old[i] = heat[i];
     heat[i] = qsub8(heat[i], random8(0, COOLING));
   }
   
   // 2. now heat drifts up (a lot) and sideways (a bit)
-  for( uint8_t y=COLS-1; y != 2; --y){
+  for( uint8_t y=COLS-1; y != 0; --y){
     for( uint8_t x=0; x != ROWS; ++x){
       i = xy2i(x,y);
-      heat_sum = 2*(uint16_t)heat[xy2i(x,y-1)] + 4*(uint16_t)heat[xy2i(x,y-2)];
+      heat_sum = 4*(uint16_t)heat[xy2i(x,y-1)];
+      if(y != 1){
+        heat_sum += 2*(uint16_t)heat[xy2i(x,y-2)];
+      }
       if(x != 0){
         heat_sum += heat[xy2i(x-1,y-1)];
       }
@@ -108,11 +133,14 @@ void FireAway(){
   }
 }
 
-void ColourLeds(){
+void ColourLeds(uint8_t count){
   // Calculate the proper LED colours
+  uint8_t frac = count * (255/FIRE_EVERY);
+  uint8_t current_heat;
   for(uint8_t i=0; i!=NUM_LEDS; ++i){
     // apparently palette works best if max is 240
-    leds[i] = ColorFromPalette( gPal, scale8(heat[i],240));
+    current_heat = lerp8by8(heat_old[i],heat[i],frac);
+    leds[i] = ColorFromPalette( gPal, scale8(current_heat,240));
   }
 }
 
