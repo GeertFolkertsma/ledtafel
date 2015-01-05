@@ -11,10 +11,10 @@
 
 // Fire settings
 #define BRIGHTNESS 180
-#define LOOP_TIME 45
-#define FIRE_EVERY 6 //update fire every n loops only; interpolate in-between
+#define LOOP_TIME 33
+#define FIRE_EVERY 10 //update fire every n loops only; interpolate in-between
 #define COOLING 40
-#define SPARKING 90
+#define SPARKING 130
 // Colours used by the fire animation
 #define C_HEATMAP 1
 #define C_RANDOMWALK 2
@@ -106,6 +106,42 @@ void loop(){
   prev_looptime = millis();
 #endif
   FastLED.delay(LOOP_TIME);
+  
+  selectSparkCell();
+}
+
+bool probability_sum_initialised = false;
+uint8_t selectSparkCell(){
+  // this function selects a random spark cell at the bottom,
+  //but probability is a linear ramp towards the middle
+  static uint8_t probability_sum[COLS];
+  if(!probability_sum_initialised){
+    uint8_t sum = 0;
+    for(int8_t i=0; i != COLS; ++i){
+      sum += COLS/2  - abs(i-COLS/2);
+      probability_sum[i] = sum;
+    }
+#ifdef SERIAL_DEBUG
+    Serial << "prob.sum. initialised: ";
+    for(uint8_t i=0; i != COLS; ++i){
+      Serial << probability_sum[i] << ",";
+    }
+    Serial << endl;
+#endif
+    probability_sum_initialised = true;
+  }
+  
+  uint8_t r = random8(probability_sum[COLS-1]+1);
+  for(uint8_t i=0; i != COLS; ++i){
+    if(r <= probability_sum[i]){
+#ifdef SERIAL_DEBUG
+      Serial << "i: " << i << endl;
+#endif
+      return i;
+    }
+  }
+  // this should not happen!
+  return 0;
 }
 
 void FireAway(){
@@ -142,12 +178,7 @@ void FireAway(){
   //with double probability in the 'middle' columns
   if( random8() < SPARKING ){
     // spark somewhere at the bottom
-    i = xy2i(random8(COLS-1),0);
-    heat[i] = qadd8(heat[i], random8(160,255));
-  }
-  if( random8() < SPARKING ){
-    // spark somewhere at the bottom, in the middle
-    i = xy2i(random8(COLS/4,COLS-COLS/4),0);
+    i = xy2i(selectSparkCell(),0);
     heat[i] = qadd8(heat[i], random8(160,255));
   }
 }
