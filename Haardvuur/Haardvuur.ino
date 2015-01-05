@@ -15,6 +15,14 @@
 #define FIRE_EVERY 6 //update fire every n loops only; interpolate in-between
 #define COOLING 40
 #define SPARKING 90
+// Colours used by the fire animation
+#define C_HEATMAP 1
+#define C_RANDOMWALK 2
+#define COLOURMODE C_RANDOMWALK
+
+#ifndef COLOURMODE
+#define COLOURMODE C_HEATMAP
+#endif
 
 // direct output buffer
 CRGB leds[NUM_LEDS];
@@ -47,15 +55,15 @@ void setup(){
   
   FastLED.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
-  //test to see if everything is working
+#ifdef SERIAL_DEBUG
+  //test to see if everything is working (only when debugging anyway)
   fill_rainbow(leds, NUM_LEDS, 0, 255/NUM_LEDS);
   FastLED.show();
   delay(2000);
   // blank strip
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   LEDS.show();
-  
-  gPal = HeatColors_p;
+#endif
 }
 
 // This code works along the lines of "Fire2012" but now in 2-D
@@ -78,6 +86,17 @@ void loop(){
     FireAway();
   }
   
+  // Select colour map
+#if COLOURMODE == C_HEATMAP
+  gPal = HeatColors_p;
+#elif COLOURMODE == C_RANDOMWALK
+  // random walk the hue (with rollover)
+  static uint8_t hue;
+  hue += random8(3) - 1;
+  CRGB darkcolor = CHSV(hue, 255, 192); //pure, 3/4 brightness
+  CRGB lightcolor = CHSV(hue, 128, 255);//half-white, full brightness
+  gPal = CRGBPalette16(CRGB::Black, darkcolor, lightcolor, CRGB::White);
+#endif
   // Calculate the proper LED colours
   ColourLeds(loopCounter);
   
