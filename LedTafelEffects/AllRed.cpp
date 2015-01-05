@@ -1,8 +1,6 @@
 #include "AllRed.h"
 
-void AllRed::init(CRGB* leds, uint8_t num_leds){
-  _leds = leds;
-  _num_leds = num_leds;
+void AllRed::init(){
 }
 
 void AllRed::update(){

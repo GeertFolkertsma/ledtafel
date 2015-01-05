@@ -1,8 +1,6 @@
 #include "AllBlack.h"
 
-void AllBlack::init(CRGB* leds, uint8_t num_leds){
-  _leds = leds;
-  _num_leds = num_leds;
+void AllBlack::init(){
 }
 
 void AllBlack::update(){

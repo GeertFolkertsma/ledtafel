@@ -1,6 +1,5 @@
 #include <FastLED.h>
-#include "AllBlack.h"
-#include "AllRed.h"
+#include "LedTafelEffect.h"
 
 #define ROWS 10
 #define COLS 10
@@ -9,22 +8,25 @@
 // This is the output buffer that gets copied onto the table
 CRGB leds[NUM_LEDS];
 
-AllBlack zwart;
-AllRed rood;
+AllBlack zwart(leds, NUM_LEDS);
+AllRed rood(leds, NUM_LEDS);
 
+LedTafelEffect* current_effect;
 
 void setup(){
   FastLED.addLeds<WS2801, RGB>(leds, NUM_LEDS);
-  zwart.init(leds,NUM_LEDS);
-  rood.init(leds,NUM_LEDS);
+  zwart.init();
+  rood.init();
 }
 
 void loop(){
   if((millis()/5000) % 2){
-    zwart.update();
+    current_effect = &zwart;
   } else {
-    rood.update();
+    current_effect = &rood;
   }
+  
+  current_effect->update();
   
   FastLED.show();
 }
