@@ -5,12 +5,11 @@
 #define COLS 10
 #define NUM_LEDS (ROWS*COLS)
 
-
 // This is the output buffer that gets copied onto the table
 CRGB leds[NUM_LEDS];
 
 AllBlack effect1(leds);
-RedLine effect2(leds);
+Haardvuur effect2(leds);
 
 LedTafelEffect* current_effect;
 
@@ -19,16 +18,21 @@ void setup(){
   FastLED.addLeds<WS2801, RGB>(leds, NUM_LEDS);
   effect1.init();
   effect2.init();
+  
+  current_effect = &effect2;
 }
 
 void loop(){
+  /*
   if((millis()/5000) % 2){
     current_effect = &effect1;
   } else {
     current_effect = &effect2;
-  }
+  }*/
   
   current_effect->update();
   
   FastLED.show();
+  
+  FastLED.delay(20);
 }

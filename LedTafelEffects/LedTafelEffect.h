@@ -20,5 +20,6 @@ class LedTafelEffect{
 #include "AllBlack.h"
 #include "AllRed.h"
 #include "RedLine.h"
+#include "Haardvuur.h"
 
 #endif
