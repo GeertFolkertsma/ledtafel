@@ -4,7 +4,7 @@
 
 class AllBlack : public LedTafelEffect{
   public:
-    AllBlack(CRGB* leds, uint8_t num_leds) : LedTafelEffect(leds,num_leds){};
+    AllBlack(CRGB* leds) : LedTafelEffect(leds){};
     void init();
     void update();
 };

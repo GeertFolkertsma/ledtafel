@@ -4,7 +4,7 @@
 
 class AllRed : public LedTafelEffect{
   public:
-    AllRed(CRGB* leds, uint8_t num_leds) : LedTafelEffect(leds,num_leds){};
+    AllRed(CRGB* leds) : LedTafelEffect(leds){};
     void init();
     void update();
 };
