@@ -21,5 +21,6 @@ class LedTafelEffect{
 #include "AllRed.h"
 #include "RedLine.h"
 #include "Haardvuur.h"
+#include "GameOfLife.h"
 
 #endif
